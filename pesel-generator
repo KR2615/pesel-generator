@@ -1,0 +1,277 @@
+#!/bin/bash
+################################################################################
+#
+#
+# Opis programu
+# Autor
+#
+# Użycie: pesel-generator [rok] [miesiac] [dzien] [plec]
+#
+################################################################################
+
+#Konfiguracja
+ur_rocznie=1600
+# Średnia ilość urodzeń rocznie przyjęta na podstawie raportu GUS za 2018 rok
+firstyear=1900
+lastyear=1999
+# Na razie program działa prawidłowo dla XX stulecia, stąd te obostrzenia
+
+################################################################################
+#
+# Walidacja dat
+#
+# Dzień
+function valid_day () {
+if [[ ! -z $1 ]];then
+    if [[ $1 =~ ^[0-9]{1,2}$ && $1 -le 31 || $1 =~ ^[0-9]{1,2}-[0-9]{1,2}$ ]];then
+	if [[ `echo $1 | grep "-"` != "" ]]; then
+	    #Mamy przedział
+	    dstart=`echo $1 | cut -f1 -d "-"`
+	    dend=`echo $1 | cut -f2 -d "-"`
+	    if [[ $dend -gt $dstart && $dstart -le 31 && $dend -le 31 && $dstart -ge 1 && $dend -ge 1 ]];then
+		true
+	    else
+		false
+	    fi
+	else
+	    #Pojedynczy dzień
+	    if [[ $1 -le 31 ]];then
+		true
+	    else
+		false
+	    fi
+	fi
+    else
+	false
+    fi
+else
+    false
+fi
+}
+
+# Miesiąc
+function valid_month () {
+if [[ ! -z $1 ]];then
+    if [[ $1 =~ ^[0-9]{1,2}$ && $1 -le 12 || $1 =~ ^[0-9]{1,2}-[0-9]{1,2}$ ]];then
+	if [[ `echo $1 | grep "-"` != "" ]]; then
+	    #Mamy przedział
+	    mstart=`echo $1 | cut -f1 -d "-"`
+	    mend=`echo $1 | cut -f2 -d "-"`
+	    if [[ $mend -gt $mstart && $mstart -le 12 && $mend -le 12 && $mstart -ge 1 && $mend -ge 1 ]];then
+		true
+	    else
+		false
+	    fi
+	else
+	    #Pojedynczy miesiąc
+	    if [[ $1 -le 12 ]];then
+		true
+	    else
+		false
+	    fi
+	fi
+    else
+	false
+    fi
+else
+    false
+fi
+}
+
+# Rok
+firstyear=1900
+lastyear=1999
+# Na razie program działa prawidłowo dla XX stulecia, stąd te obostrzenia
+function valid_year () {
+if [[ ! -z $1 ]];then
+    if [[ $1 =~ ^[0-9]{1,4}$ && $1 -le $lastyear || $1 =~ ^[0-9]{1,4}-[0-9]{1,4}$ ]];then
+	if [[ `echo $1 | grep "-"` != "" ]]; then
+	    #Mamy przedział
+	    ystart=`echo $1 | cut -f1 -d "-"`
+	    yend=`echo $1 | cut -f2 -d "-"`
+	    if [[ $yend -gt $ystart && $ystart -le $lastyear && $yend -le $lastyear && $ystart -ge $firstyear && $yend -ge $firstyear ]];then
+		true
+	    else
+		false
+	    fi
+	else
+	    #Pojedynczy rok
+	    if [[ $1 -le $lastyear && $1 -ge $firstyear || $1 == 0 ]];then
+		true
+	    else
+		false
+	    fi
+	fi
+    else
+	false
+    fi
+else
+    false
+fi
+}
+
+################################################################################
+#
+# Pozostałe funkcje
+function pesel_checksum () {
+    pesel=$1
+    suma=$(((${pesel:0:1}+3*${pesel:1:1}+7*${pesel:2:1}+9*${pesel:3:1}+${pesel:4:1}+3*${pesel:5:1}+7*${pesel:6:1}+9*${pesel:7:1}+${pesel:8:1}+3*${pesel:9:1})%10))
+    echo $suma
+}
+
+################################################################################
+#
+# Sprawdzanie wejścia
+# Rok
+if [[ -z $1 ]];then
+    while true; do
+	read -p "Podaj rok [1990,1987-1993,0=Wszystkie]: " y
+    if valid_year $y;then
+	break
+    else
+	echo "Nieprawidłowa wartość"
+    fi
+    done
+else
+    # Odczytywanie z argumentów
+    if valid_year $1;then
+	y=$1
+    else
+	echo "Jako argument przekazano nieprawidłową wartość roku"
+	exit 1
+    fi
+fi
+
+# Miesiac
+if [[ -z $2 ]];then
+    while true; do
+	read -p "Podaj miesiąc [1,3-5,0=Wszystkie]: " m
+    if valid_month $m;then
+	break
+    else
+	echo "Nieprawidłowa wartość"
+    fi
+    done
+else
+    # Odczytywanie z argumentów
+    if valid_month $2;then
+	m=$2
+    else
+	echo "Jako argument przekazano nieprawidłową wartość miesiąca"
+	exit 2
+    fi
+fi
+
+# Dzień
+if [[ -z $3 ]];then
+    while true; do
+	read -p "Podaj dzień [1,3-31,0=Wszystkie]: " d
+    if valid_day $d;then
+	break
+    else
+	echo "Nieprawidłowa wartość"
+    fi
+    done
+else
+    # Odczytywanie z argumentów
+    if valid_day $3;then
+	d=$3
+    else
+	echo "Jako argument przekazano nieprawidłową wartość dnia"
+	exit 3
+    fi
+fi
+
+# Walidacja płci
+if [[ -z $4 ]];then
+    read -p "Podaj Płeć [M/K/*]: " plec
+else
+    plec=$4
+fi
+
+################################################################################
+#
+# Ustawianie wartości startowych
+# Dzień
+if [[ `echo $d | grep "-"` != "" ]]; then
+    #Mamy przedział
+    dstart=`echo $d | cut -f1 -d "-"`
+    dend=`echo $d | cut -f2 -d "-"`
+elif [[ $d == 0 ]];then
+    dstart=1
+    # dend porównywać z miesiacem
+    dend=31
+else
+    dstart=$d
+    dend=$d
+fi
+
+# Miesiąc
+if [[ `echo $m | grep "-"` != "" ]]; then
+    #Mamy przedział
+    mstart=`echo $m | cut -f1 -d "-"`
+    mend=`echo $m | cut -f2 -d "-"`
+elif [[ $m == 0 ]];then
+    mstart=1
+    mend=12
+else
+    mstart=$m
+    mend=$m
+fi
+
+# Rok
+if [[ `echo $y | grep "-"` != "" ]]; then
+    #Mamy przedział
+    ystart=`echo $y | cut -f1 -d "-" | cut -c3-4`
+    yend=`echo $y | cut -f2 -d "-" | cut -c3-4`
+elif [[ $y == 0 ]];then
+    ystart=1
+    yend=99
+else
+    ystart=`echo $y | cut -c3-4`
+    yend=`echo $y | cut -c3-4`
+fi
+
+# Główne działanie programu
+for (( year=$ystart; year <= $yend; year++)) do
+    for (( month=$mstart; month <= $mend; month++)); do
+	for (( day=$dstart; day <= $dend; day++)); do
+	    for (( childcount=1; childcount <= $ur_rocznie; childcount++));do
+	    day=`echo $day | awk '{printf "%02d", $0}'`
+	    month=`echo $month | awk '{printf "%02d", $0}'`
+	    year=`echo $year | awk '{printf "%02d", $0}'`
+	    bday=`echo $childcount | awk '{printf "%04d", $0}'`
+	    gender=$((${bday:3:1}%2))
+	    pesel=$year$month$day$bday
+	    checksum=`pesel_checksum $pesel`
+	    if [[ $plec == "m" || $plec == "M" ]];then
+	    # Szukamy tylko mężczyzn
+		if [[ $gender == 1 ]]; then
+		    if [[ $checksum != 0 ]]; then
+			echo $pesel$((10-$checksum))
+		    else
+			echo $pesel"0"
+		    fi
+		fi
+	    elif [[ $plec == "k" || $plec == "K" ]];then
+	    # Szukamy tylko kobiet
+		if [[ $gender == 0 ]]; then
+		    if [[ $checksum != 0 ]]; then
+			echo $pesel$((10-$checksum))
+		    else
+			echo $pesel"0"
+		    fi
+		fi
+	    else
+		if [[ $checksum != 0 ]]; then
+		    echo $pesel$((10-$checksum))
+		else
+		    echo $pesel"0"
+		fi
+	    fi
+	    done
+	done
+    done
+done
+
+exit 0

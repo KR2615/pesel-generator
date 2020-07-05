@@ -1,0 +1,11 @@
++ Wpisywanie roku, miesiąca i dnia (prompt)
+* PESELE dla lat < 1900 i > 2000
++ Walidacja wpisywanych danych
+* Lata przestępne
++ Płeć z dużych i małych liter
+* man lub chociaż --help
+
+Kody błędów
+1 - nieprawidłowa wartość roku
+2 - nieprawidłowa wartość miesiąca
+3 - nieprawidłowa wartość dnia
